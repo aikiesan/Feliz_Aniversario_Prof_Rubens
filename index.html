@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.A.E. - Sistema de Análise Espectral</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --term-color: #0f0;
+            --alert-color: #f00;
+        }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: #050505;
+            color: var(--term-color);
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        /* Efeito CRT (Tela de Tubo Antiga) */
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        h1 {
+            text-transform: uppercase;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--term-color);
+            margin-bottom: 5px;
+            z-index: 3;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            color: #88ff88;
+            z-index: 3;
+            text-align: center;
+        }
+
+        /* Monitor Responsivo */
+        .monitor {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            aspect-ratio: 16/9;
+            border: 2px solid var(--term-color);
+            box-shadow: 0 0 15px var(--term-color);
+            overflow: hidden;
+            background: #111;
+            z-index: 3;
+        }
+
+        /* FOTO DA UNICAMP ATUALIZADA */
+        .map-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('Unicamp_Aerea.jpg');
+            background-size: cover;
+            background-position: center;
+            transition: filter 0.2s;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            mix-blend-mode: overlay;
+        }
+
+        /* Radar Overlay Responsivo */
+        .radar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            height: 150%;
+            aspect-ratio: 1/1;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 0, 0.1);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 50%;
+            height: 50%;
+            background: linear-gradient(90deg, rgba(0, 255, 0, 0) 0%, rgba(0, 255, 0, 0.4) 100%);
+            transform-origin: bottom left;
+            animation: sweep 4s linear infinite;
+        }
+
+        @keyframes sweep {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 6;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .hud-right {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 6;
+            font-size: 12px;
+            text-align: right;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        /* Painel de Controles */
+        .controls {
+            margin-top: 15px;
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 3;
+            background: rgba(0, 20, 0, 0.8);
+            padding: 15px;
+            border: 1px solid #0f0;
+            box-sizing: border-box;
+        }
+
+        .slider-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-group label {
+            width: 45%;
+            font-size: 0.9rem;
+        }
+
+        input[type=range] {
+            width: 50%;
+            accent-color: var(--term-color);
+            cursor: pointer;
+            height: 25px;
+        }
+
+        /* Maior para facilitar o toque no celular */
+
+        .signal-container {
+            width: 100%;
+            height: 15px;
+            border: 1px solid var(--term-color);
+            margin-top: 5px;
+            background: #222;
+        }
+
+        .signal-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--term-color);
+            transition: width 0.3s;
+            box-shadow: 0 0 10px var(--term-color);
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--term-color);
+            border: 1px solid var(--term-color);
+            padding: 12px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn:hover {
+            background: var(--term-color);
+            color: #000;
+            box-shadow: 0 0 15px var(--term-color);
+        }
+
+        .btn-report {
+            display: none;
+            margin-top: 15px;
+            background: var(--term-color);
+            color: #000;
+            animation: pulseSoft 2s infinite;
+        }
+
+        /* Modais (Pop-ups) responsivos */
+        .modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background: #0a0a0a;
+            border: 2px solid var(--term-color);
+            padding: 25px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 0 40px rgba(0, 255, 0, 0.3);
+            text-align: left;
+            line-height: 1.5;
+            max-height: 90vh;
+            overflow-y: auto;
+            /* Permite rolar o texto se a tela for pequena */
+        }
+
+        .pulse {
+            animation: pulseSoft 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseSoft {
+            0% {
+                opacity: 1;
+                text-shadow: 0 0 5px var(--term-color);
+            }
+
+            50% {
+                opacity: 0.5;
+                text-shadow: none;
+            }
+
+            100% {
+                opacity: 1;
+                text-shadow: 0 0 5px var(--term-color);
+            }
+        }
+
+        .pulse-alert {
+            animation: pulseAlert 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseAlert {
+            0% {
+                opacity: 1;
+                text-shadow: 0 0 5px var(--alert-color);
+            }
+
+            50% {
+                opacity: 0.4;
+                text-shadow: none;
+            }
+
+            100% {
+                opacity: 1;
+                text-shadow: 0 0 5px var(--alert-color);
+            }
+        }
+
+        /* Adaptação extra para telas muito pequenas (Celulares em pé) */
+        @media (max-width: 500px) {
+            .slider-group {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .slider-group label {
+                width: 100%;
+            }
+
+            input[type=range] {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- POP-UP INICIAL DE BRIEFING -->
+    <div class="modal" id="intro-modal">
+        <div class="modal-content">
+            <h2 class="pulse" style="margin-top: 0; border-bottom: 1px solid #0f0; padding-bottom: 10px;">>> TRANSMISSÃO
+                SEGURA RECEBIDA <<< /h2>
+                    <p><strong>OPERADOR:</strong> Prof. Dr. Rubens</p>
+                    <p><strong>ALVO:</strong> NIPE - UNICAMP</p>
+                    <p style="color: #ccc;">Atenção: As imagens do satélite sofreram forte interferência atmosférica na
+                        região de Campinas.</p>
+                    <p><strong>SUA MISSÃO:</strong><br>
+                        Utilize o painel de calibração abaixo para estabilizar o sistema.</p>
+                    <ul style="color: #ccc; padding-left: 20px;">
+                        <li>Regule a refletância da <strong>Banda NIR</strong> e absorção da <strong>Banda RED</strong>.
+                        </li>
+                        <li>Zere a dispersão ajustando o <strong>FOCO</strong> ao máximo.</li>
+                    </ul>
+                    <button class="btn" onclick="startMission()" style="margin-top: 15px;">INICIAR CALIBRAÇÃO</button>
+        </div>
+    </div>
+
+    <!-- UI PRINCIPAL -->
+    <h1>SISTEMA DE ANÁLISE ESPECTRAL</h1>
+    <div class="subtitle">Agência de Sensoriamento Remoto - Divisão de Inteligência Agronômica</div>
+
+    <div class="monitor">
+        <div class="map-bg" id="map-bg"></div>
+        <div class="radar">
+            <div class="radar-sweep"></div>
+        </div>
+        <div class="hud">
+            <div>NDVI Estimado: <span id="ndvi-val">0.00</span></div>
+            <div>Status: <span id="status-text" class="pulse-alert"
+                    style="color:var(--alert-color); font-weight: bold;">SINAL PERDIDO</span></div>
+        </div>
+        <div class="hud-right">
+            <div>LAT: <span id="lat-val">##°##'##.#"S</span></div>
+            <div>LON: <span id="lon-val">##°##'##.#"W</span></div>
+        </div>
+        <canvas id="noise"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="slider-group">
+            <label>BANDA NIR (Infravermelho): <span id="nir-out">10</span>%</label>
+            <input type="range" id="nir" min="0" max="100" value="10">
+        </div>
+        <div class="slider-group">
+            <label>BANDA RED (Vermelho): <span id="red-out">90</span>%</label>
+            <input type="range" id="red" min="0" max="100" value="90">
+        </div>
+        <div class="slider-group">
+            <label>FOCO ESPACIAL: <span id="focus-out">0</span>%</label>
+            <input type="range" id="focus" min="0" max="100" value="0">
+        </div>
+
+        <div style="margin-top: 10px; font-weight: bold;">FORÇA DO SINAL: <span id="signal-percent">0</span>%</div>
+        <div class="signal-container">
+            <div class="signal-bar" id="signal-bar"></div>
+        </div>
+
+        <button class="btn btn-report" id="btn-report" onclick="showReport()">DESCRIPTOGRAFAR MENSAGEM SECRETA</button>
+    </div>
+
+    <!-- CARTA DE ANIVERSÁRIO (FINAL) -->
+    <div class="modal" id="end-modal" style="display: none;">
+        <div class="modal-content">
+            <h2 class="pulse" style="margin-top: 0; color: #0f0; border-bottom: 1px solid #0f0; padding-bottom: 10px;">
+                RELATÓRIO OFICIAL DE MISSÃO</h2>
+            <p><strong>CÓDIGO DE SUCESSO:</strong> ANIVERSARIO-NIPE-UNICAMP</p>
+            <p>Caro Prof. Dr. Rubens,</p>
+            <p>Calibração perfeita! Seu conhecimento limpou as nuvens espectrais e revelou a imagem com precisão máxima.
+            </p>
+            <p>Assim como o NDVI mede o vigor e a saúde de uma cultura, hoje aproveito para "medir" e celebrar a saúde
+                de uma trajetória incrível. Parabéns por mais um ano de vida!</p>
+            <p>Aproveito a quebra do protocolo nesta mensagem para expressar minha profunda gratidão. Sou muito grato
+                por todo o aprendizado, pela mentoria e pela grande oportunidade que o senhor me proporcionou no
+                pós-doutorado. Estar sob sua orientação é um privilégio imenso.</p>
+            <p>Que seu novo ciclo tenha o brilho, a força e o vigor da melhor assinatura espectral possível. Feliz
+                Aniversário!</p>
+            <p style="text-align: right; color: #88ff88; margin-top: 20px;"><em>Com grande respeito e
+                    admiração,<br>Lucas Nakamura Cerejo</em></p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('noise');
+        const ctx = canvas.getContext('2d');
+        const mapBg = document.getElementById('map-bg');
+
+        // Controles e Outputs
+        const nirSlider = document.getElementById('nir');
+        const redSlider = document.getElementById('red');
+        const focusSlider = document.getElementById('focus');
+        const ndviVal = document.getElementById('ndvi-val');
+        const signalBar = document.getElementById('signal-bar');
+        const signalPercent = document.getElementById('signal-percent');
+        const statusText = document.getElementById('status-text');
+        const latVal = document.getElementById('lat-val');
+        const lonVal = document.getElementById('lon-val');
+        const btnReport = document.getElementById('btn-report');
+
+        // VALORES ALVO DA MISSÃO (Alvo ideal)
+        const TARGET_NIR = 85;
+        const TARGET_RED = 15;
+        const TARGET_FOCUS = 100;
+
+        let missionActive = false;
+        let animationId;
+
+        // Resolução interna fixa para o estática (o CSS cuida do tamanho responsivo)
+        canvas.width = 700; canvas.height = 400;
+
+        function startMission() {
+            document.getElementById('intro-modal').style.display = 'none';
+            missionActive = true;
+            updateSystem();
+        }
+
+        // Ruído de Estática
+        function drawNoise(intensity) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (intensity <= 0.01) return;
+
+            const imgData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const color = Math.random() * 255;
+                data[i] = color * 0.5;
+                data[i + 1] = color;
+                data[i + 2] = color * 0.5;
+                data[i + 3] = 255 * intensity;
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        function scrambleCoords() {
+            const rand = () => (Math.random() * 90).toFixed(4);
+            latVal.innerText = `${rand()}°S`;
+            lonVal.innerText = `${rand()}°W`;
+        }
+
+        function updateSystem() {
+            if (!missionActive) return;
+
+            let nir = parseInt(nirSlider.value);
+            let red = parseInt(redSlider.value);
+            let focus = parseInt(focusSlider.value);
+
+            document.getElementById('nir-out').innerText = nir;
+            document.getElementById('red-out').innerText = red;
+            document.getElementById('focus-out').innerText = focus;
+
+            // Simulação matemática do NDVI
+            let denominator = (nir + red) === 0 ? 1 : (nir + red);
+            let ndvi = ((nir - red) / denominator).toFixed(2);
+            ndviVal.innerText = ndvi;
+
+            // Calcula erro bruto
+            let errorNir = Math.abs(TARGET_NIR - nir);
+            let errorRed = Math.abs(TARGET_RED - red);
+            let errorFocus = Math.abs(TARGET_FOCUS - focus);
+
+            // FACILITADOR: Se estiver perto (margem de 15 pontos), o sistema perdoa e zera o erro daquela barra
+            if (errorNir <= 15) errorNir = 0;
+            if (errorRed <= 15) errorRed = 0;
+            if (errorFocus <= 15) errorFocus = 0;
+
+            let totalError = errorNir + errorRed + errorFocus;
+
+            // Normaliza o erro para gerar a porcentagem
+            let errorRatio = Math.min(totalError / 100, 1);
+
+            // Força do Sinal (%)
+            let signalStrength = Math.floor(Math.max(100 - (errorRatio * 100), 0));
+            signalBar.style.width = signalStrength + '%';
+            signalPercent.innerText = signalStrength;
+
+            // EFEITOS VISUAIS DA IMAGEM DE FUNDO
+            let blur = errorRatio * 8;
+            let grayscale = errorRatio * 100;
+            let hue = errorRatio * 180;
+            mapBg.style.filter = `blur(${blur}px) grayscale(${grayscale}%) hue-rotate(${hue}deg) contrast(${100 + (signalStrength * 0.2)}%)`;
+
+            drawNoise(errorRatio);
+
+            // Lógica de Vitória Facilitada (Sinal = 100%)
+            if (signalStrength >= 100) {
+                statusText.innerText = "ALVO TRAVADO: NIPE UNICAMP";
+                statusText.style.color = "var(--term-color)";
+                statusText.className = "pulse";
+                latVal.innerText = "22°48'56.0\"S"; // Coordenadas aproximadas NIPE
+                lonVal.innerText = "47°03'58.0\"W";
+                btnReport.style.display = "block";
+            } else {
+                statusText.innerText = "SINAL INTERROMPIDO";
+                statusText.style.color = "var(--alert-color)";
+                statusText.className = "pulse-alert";
+                btnReport.style.display = "none";
+                scrambleCoords();
+            }
+
+            animationId = requestAnimationFrame(updateSystem);
+        }
+
+        nirSlider.addEventListener('input', updateSystem);
+        redSlider.addEventListener('input', updateSystem);
+        focusSlider.addEventListener('input', updateSystem);
+
+        function showReport() {
+            cancelAnimationFrame(animationId);
+            drawNoise(0);
+            document.getElementById('end-modal').style.display = 'flex';
+        }
+
+    </script>
+</body>
+
+</html>
