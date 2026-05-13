@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>S.A.E. - Sistema de Análise Espectral</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
@@ -14,6 +14,8 @@
         }
 
         body {
+            /* 100dvh garante que vai caber perfeitamente ignorando a barra de URL do celular */
+            height: 100dvh;
             margin: 0;
             padding: 10px;
             background-color: #050505;
@@ -22,11 +24,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-            user-select: none;
+            justify-content: space-between;
+            overflow: hidden;
+            /* PROÍBE SCROLL DOWN NA TELA INTEIRA */
             box-sizing: border-box;
+            touch-action: none;
+            user-select: none;
         }
 
         /* Efeito CRT (Tela de Tubo Antiga) */
@@ -44,35 +47,38 @@
             pointer-events: none;
         }
 
+        /* Ajuste dinâmico das fontes para não quebrar em telas pequenas */
         h1 {
             text-transform: uppercase;
-            font-size: 1.5rem;
+            font-size: clamp(1.2rem, 3vh, 1.5rem);
             letter-spacing: 2px;
             text-shadow: 0 0 5px var(--term-color);
-            margin-bottom: 5px;
+            margin: 0;
             z-index: 3;
             text-align: center;
         }
 
         .subtitle {
-            font-size: 0.9rem;
-            margin-bottom: 15px;
+            font-size: clamp(0.75rem, 2vh, 0.9rem);
+            margin-bottom: 5px;
             color: #88ff88;
             z-index: 3;
             text-align: center;
         }
 
-        /* Monitor Responsivo */
+        /* O monitor agora 'encolhe' ou 'cresce' automaticamente para preencher o espaço sem empurrar as coisas pra fora */
         .monitor {
             position: relative;
             width: 100%;
             max-width: 700px;
-            aspect-ratio: 16/9;
+            flex: 1 1 auto;
+            min-height: 150px;
             border: 2px solid var(--term-color);
-            box-shadow: 0 0 15px var(--term-color);
+            box-shadow: 0 0 10px var(--term-color);
             overflow: hidden;
             background: #111;
             z-index: 3;
+            margin-bottom: 10px;
         }
 
         /* FOTO DA UNICAMP ATUALIZADA */
@@ -132,10 +138,10 @@
 
         .hud {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 5px;
+            left: 5px;
             z-index: 6;
-            font-size: 12px;
+            font-size: clamp(10px, 2vh, 12px);
             background: rgba(0, 0, 0, 0.7);
             padding: 5px;
             border-radius: 4px;
@@ -143,27 +149,27 @@
 
         .hud-right {
             position: absolute;
-            bottom: 10px;
-            right: 10px;
+            bottom: 5px;
+            right: 5px;
             z-index: 6;
-            font-size: 12px;
+            font-size: clamp(10px, 2vh, 12px);
             text-align: right;
             background: rgba(0, 0, 0, 0.7);
             padding: 5px;
             border-radius: 4px;
         }
 
-        /* Painel de Controles */
+        /* Painel de Controles muito mais compacto */
         .controls {
-            margin-top: 15px;
+            flex: 0 0 auto;
             width: 100%;
             max-width: 700px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             z-index: 3;
             background: rgba(0, 20, 0, 0.8);
-            padding: 15px;
+            padding: 10px;
             border: 1px solid #0f0;
             box-sizing: border-box;
         }
@@ -176,7 +182,10 @@
 
         .slider-group label {
             width: 45%;
-            font-size: 0.9rem;
+            font-size: clamp(0.7rem, 2vh, 0.9rem);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         input[type=range] {
@@ -184,15 +193,13 @@
             accent-color: var(--term-color);
             cursor: pointer;
             height: 25px;
+            margin: 0;
         }
-
-        /* Maior para facilitar o toque no celular */
 
         .signal-container {
             width: 100%;
-            height: 15px;
+            height: 10px;
             border: 1px solid var(--term-color);
-            margin-top: 5px;
             background: #222;
         }
 
@@ -208,9 +215,9 @@
             background: transparent;
             color: var(--term-color);
             border: 1px solid var(--term-color);
-            padding: 12px 20px;
+            padding: 8px;
             font-family: 'Share Tech Mono', monospace;
-            font-size: 1rem;
+            font-size: clamp(0.8rem, 2vh, 1rem);
             cursor: pointer;
             transition: 0.3s;
             text-transform: uppercase;
@@ -227,7 +234,7 @@
 
         .btn-report {
             display: none;
-            margin-top: 15px;
+            margin-top: 5px;
             background: var(--term-color);
             color: #000;
             animation: pulseSoft 2s infinite;
@@ -253,15 +260,28 @@
         .modal-content {
             background: #0a0a0a;
             border: 2px solid var(--term-color);
-            padding: 25px;
+            padding: 20px;
             max-width: 600px;
             width: 100%;
-            box-shadow: 0 0 40px rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
             text-align: left;
-            line-height: 1.5;
-            max-height: 90vh;
+            line-height: 1.4;
+            max-height: 90dvh;
             overflow-y: auto;
-            /* Permite rolar o texto se a tela for pequena */
+            /* Apenas o modal pode rolar, se precisar */
+        }
+
+        /* Ajuste de fontes dentro do modal para celular */
+        .modal-content h2 {
+            font-size: clamp(1.2rem, 3vh, 1.5rem);
+            margin-top: 0;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 10px;
+        }
+
+        .modal-content p,
+        .modal-content li {
+            font-size: clamp(0.85rem, 2vh, 1rem);
         }
 
         .pulse {
@@ -305,61 +325,48 @@
                 text-shadow: 0 0 5px var(--alert-color);
             }
         }
-
-        /* Adaptação extra para telas muito pequenas (Celulares em pé) */
-        @media (max-width: 500px) {
-            .slider-group {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-
-            .slider-group label {
-                width: 100%;
-            }
-
-            input[type=range] {
-                width: 100%;
-            }
-        }
     </style>
 </head>
 
 <body>
 
-    <!-- POP-UP INICIAL DE BRIEFING -->
+    <!-- POP-UP INICIAL REFORMULADO -->
     <div class="modal" id="intro-modal">
         <div class="modal-content">
-            <h2 class="pulse" style="margin-top: 0; border-bottom: 1px solid #0f0; padding-bottom: 10px;">>> TRANSMISSÃO
-                SEGURA RECEBIDA <<< /h2>
-                    <p><strong>OPERADOR:</strong> Prof. Dr. Rubens</p>
-                    <p><strong>ALVO:</strong> NIPE - UNICAMP</p>
-                    <p style="color: #ccc;">Atenção: As imagens do satélite sofreram forte interferência atmosférica na
-                        região de Campinas.</p>
+            <h2 class="pulse">>> MENSAGEM DE ANIVERSÁRIO INTERCEPTADA <<< /h2>
+                    <p><strong>ALVO:</strong> Prof. Dr. Rubens</p>
+                    <p style="color: #ffeb3b; font-weight: bold;">
+                        Atenção: Um pacote criptografado com sua homenagem de aniversário foi detectado nos radares do
+                        NIPE!
+                    </p>
+                    <p style="color: #ccc;">
+                        No entanto, o sinal do satélite sofreu forte interferência atmosférica e a mensagem está
+                        bloqueada.
+                    </p>
                     <p><strong>SUA MISSÃO:</strong><br>
-                        Utilize o painel de calibração abaixo para estabilizar o sistema.</p>
+                        Como especialista, calibre os sensores abaixo para descriptografar sua surpresa.</p>
                     <ul style="color: #ccc; padding-left: 20px;">
-                        <li>Regule a refletância da <strong>Banda NIR</strong> e absorção da <strong>Banda RED</strong>.
-                        </li>
+                        <li>Ajuste a <strong>Banda NIR</strong> e a <strong>Banda RED</strong>.</li>
                         <li>Zere a dispersão ajustando o <strong>FOCO</strong> ao máximo.</li>
                     </ul>
-                    <button class="btn" onclick="startMission()" style="margin-top: 15px;">INICIAR CALIBRAÇÃO</button>
+                    <button class="btn" onclick="startMission()" style="margin-top: 10px;">INICIAR CALIBRAÇÃO</button>
         </div>
     </div>
 
     <!-- UI PRINCIPAL -->
-    <h1>SISTEMA DE ANÁLISE ESPECTRAL</h1>
-    <div class="subtitle">Agência de Sensoriamento Remoto - Divisão de Inteligência Agronômica</div>
+    <h1>ANÁLISE ESPECTRAL</h1>
+    <div class="subtitle">Agência Espacial - Divisão NIPE UNICAMP</div>
 
+    <!-- Tela do Satélite Flexível -->
     <div class="monitor">
         <div class="map-bg" id="map-bg"></div>
         <div class="radar">
             <div class="radar-sweep"></div>
         </div>
         <div class="hud">
-            <div>NDVI Estimado: <span id="ndvi-val">0.00</span></div>
+            <div>NDVI: <span id="ndvi-val">0.00</span></div>
             <div>Status: <span id="status-text" class="pulse-alert"
-                    style="color:var(--alert-color); font-weight: bold;">SINAL PERDIDO</span></div>
+                    style="color:var(--alert-color); font-weight: bold;">BLOQUEADO</span></div>
         </div>
         <div class="hud-right">
             <div>LAT: <span id="lat-val">##°##'##.#"S</span></div>
@@ -368,13 +375,14 @@
         <canvas id="noise"></canvas>
     </div>
 
+    <!-- Controles -->
     <div class="controls">
         <div class="slider-group">
-            <label>BANDA NIR (Infravermelho): <span id="nir-out">10</span>%</label>
+            <label>BANDA NIR: <span id="nir-out">10</span>%</label>
             <input type="range" id="nir" min="0" max="100" value="10">
         </div>
         <div class="slider-group">
-            <label>BANDA RED (Vermelho): <span id="red-out">90</span>%</label>
+            <label>BANDA RED: <span id="red-out">90</span>%</label>
             <input type="range" id="red" min="0" max="100" value="90">
         </div>
         <div class="slider-group">
@@ -382,23 +390,25 @@
             <input type="range" id="focus" min="0" max="100" value="0">
         </div>
 
-        <div style="margin-top: 10px; font-weight: bold;">FORÇA DO SINAL: <span id="signal-percent">0</span>%</div>
+        <div
+            style="font-weight: bold; font-size: clamp(0.7rem, 2vh, 0.9rem); display: flex; justify-content: space-between;">
+            <span>FORÇA DO SINAL:</span> <span id="signal-percent">0%</span>
+        </div>
         <div class="signal-container">
             <div class="signal-bar" id="signal-bar"></div>
         </div>
 
-        <button class="btn btn-report" id="btn-report" onclick="showReport()">DESCRIPTOGRAFAR MENSAGEM SECRETA</button>
+        <button class="btn btn-report" id="btn-report" onclick="showReport()">LER MENSAGEM DE ANIVERSÁRIO</button>
     </div>
 
     <!-- CARTA DE ANIVERSÁRIO (FINAL) -->
     <div class="modal" id="end-modal" style="display: none;">
         <div class="modal-content">
-            <h2 class="pulse" style="margin-top: 0; color: #0f0; border-bottom: 1px solid #0f0; padding-bottom: 10px;">
-                RELATÓRIO OFICIAL DE MISSÃO</h2>
+            <h2 class="pulse" style="color: #0f0;">RELATÓRIO OFICIAL DE MISSÃO</h2>
             <p><strong>CÓDIGO DE SUCESSO:</strong> ANIVERSARIO-NIPE-UNICAMP</p>
             <p>Caro Prof. Dr. Rubens,</p>
-            <p>Calibração perfeita! Seu conhecimento limpou as nuvens espectrais e revelou a imagem com precisão máxima.
-            </p>
+            <p>Calibração perfeita! Seu conhecimento limpou as nuvens espectrais e descriptografou este pacote com
+                sucesso.</p>
             <p>Assim como o NDVI mede o vigor e a saúde de uma cultura, hoje aproveito para "medir" e celebrar a saúde
                 de uma trajetória incrível. Parabéns por mais um ano de vida!</p>
             <p>Aproveito a quebra do protocolo nesta mensagem para expressar minha profunda gratidão. Sou muito grato
@@ -406,7 +416,7 @@
                 pós-doutorado. Estar sob sua orientação é um privilégio imenso.</p>
             <p>Que seu novo ciclo tenha o brilho, a força e o vigor da melhor assinatura espectral possível. Feliz
                 Aniversário!</p>
-            <p style="text-align: right; color: #88ff88; margin-top: 20px;"><em>Com grande respeito e
+            <p style="text-align: right; color: #88ff88; margin-top: 15px;"><em>Com grande respeito e
                     admiração,<br>Lucas Nakamura Cerejo</em></p>
         </div>
     </div>
@@ -428,7 +438,7 @@
         const lonVal = document.getElementById('lon-val');
         const btnReport = document.getElementById('btn-report');
 
-        // VALORES ALVO DA MISSÃO (Alvo ideal)
+        // VALORES ALVO DA MISSÃO
         const TARGET_NIR = 85;
         const TARGET_RED = 15;
         const TARGET_FOCUS = 100;
@@ -436,7 +446,7 @@
         let missionActive = false;
         let animationId;
 
-        // Resolução interna fixa para o estática (o CSS cuida do tamanho responsivo)
+        // Resolução interna fixa para a estática
         canvas.width = 700; canvas.height = 400;
 
         function startMission() {
@@ -445,7 +455,12 @@
             updateSystem();
         }
 
-        // Ruído de Estática
+        // Previne o comportamento de scroll elástico no celular
+        document.addEventListener('touchmove', function (e) {
+            if (e.target.closest('.modal-content')) return; // Permite rolar APENAS o texto da carta final se precisar
+            e.preventDefault();
+        }, { passive: false });
+
         function drawNoise(intensity) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (intensity <= 0.01) return;
@@ -479,32 +494,26 @@
             document.getElementById('red-out').innerText = red;
             document.getElementById('focus-out').innerText = focus;
 
-            // Simulação matemática do NDVI
             let denominator = (nir + red) === 0 ? 1 : (nir + red);
             let ndvi = ((nir - red) / denominator).toFixed(2);
             ndviVal.innerText = ndvi;
 
-            // Calcula erro bruto
             let errorNir = Math.abs(TARGET_NIR - nir);
             let errorRed = Math.abs(TARGET_RED - red);
             let errorFocus = Math.abs(TARGET_FOCUS - focus);
 
-            // FACILITADOR: Se estiver perto (margem de 15 pontos), o sistema perdoa e zera o erro daquela barra
+            // FACILITADOR
             if (errorNir <= 15) errorNir = 0;
             if (errorRed <= 15) errorRed = 0;
             if (errorFocus <= 15) errorFocus = 0;
 
             let totalError = errorNir + errorRed + errorFocus;
-
-            // Normaliza o erro para gerar a porcentagem
             let errorRatio = Math.min(totalError / 100, 1);
 
-            // Força do Sinal (%)
             let signalStrength = Math.floor(Math.max(100 - (errorRatio * 100), 0));
             signalBar.style.width = signalStrength + '%';
-            signalPercent.innerText = signalStrength;
+            signalPercent.innerText = signalStrength + '%';
 
-            // EFEITOS VISUAIS DA IMAGEM DE FUNDO
             let blur = errorRatio * 8;
             let grayscale = errorRatio * 100;
             let hue = errorRatio * 180;
@@ -512,16 +521,15 @@
 
             drawNoise(errorRatio);
 
-            // Lógica de Vitória Facilitada (Sinal = 100%)
             if (signalStrength >= 100) {
-                statusText.innerText = "ALVO TRAVADO: NIPE UNICAMP";
+                statusText.innerText = "SINAL DESCRIPTOGRAFADO";
                 statusText.style.color = "var(--term-color)";
                 statusText.className = "pulse";
-                latVal.innerText = "22°48'56.0\"S"; // Coordenadas aproximadas NIPE
+                latVal.innerText = "22°48'56.0\"S";
                 lonVal.innerText = "47°03'58.0\"W";
                 btnReport.style.display = "block";
             } else {
-                statusText.innerText = "SINAL INTERROMPIDO";
+                statusText.innerText = "BLOQUEADO";
                 statusText.style.color = "var(--alert-color)";
                 statusText.className = "pulse-alert";
                 btnReport.style.display = "none";
